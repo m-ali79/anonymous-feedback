@@ -10,7 +10,7 @@ export function Nav() {
           True Feedback
         </Link>
         <Button className="bg-white text-black hover:bg-slate-50 p-5" asChild>
-          <Link href={"/singup"}>Login</Link>
+          <Link href={"/singin"}>Login</Link>
         </Button>
       </div>
     </nav>
