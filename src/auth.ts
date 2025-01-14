@@ -1,37 +1,61 @@
 import { signInSchema } from "@/lib/zod";
-import NextAuth, { NextAuthConfig } from "next-auth";
+import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { getRegisteredUser } from "@/lib/queries/user";
-import { ZodError } from "zod";
+import { db } from "@/lib/db";
+import bcrypt from "bcrypt";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const authOptions = {
   providers: [
     Credentials({
       credentials: {
-        email: { label: "email" },
-        password: { label: "password", type: "password" },
-        username: { label: "Username", type: "username" },
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
       },
 
       authorize: async (credentials) => {
         try {
-          let user = null;
-          const { email, password, username } = await signInSchema.parseAsync(
+          // Parse and validate credentials
+          const { email, password } = await signInSchema.parseAsync(
             credentials
           );
 
-          user = await getRegisteredUser(password, email, username);
-          if (user) return user;
-          return null;
-
-          // TODO: implement register
-        } catch (error) {
-          if (error instanceof ZodError) {
-            // Return `null` to indicate that the credentials are invalid
-            return null;
+          if (!email || !password) {
+            throw new Error("Email and password are required.");
           }
+
+          // Query database for user
+          const dbUser = await db.user.findUnique({
+            where: { email },
+          });
+
+          if (!dbUser) {
+            throw new Error("Invalid email or password.");
+          }
+
+          // Compare passwords
+          const isValidPassword = await bcrypt.compare(
+            password,
+            dbUser.hasedPassword
+          );
+
+          if (!isValidPassword) {
+            throw new Error("Invalid email or password.");
+          }
+
+          // Return a valid User object
+          return {
+            id: dbUser.id,
+            name: dbUser.userName,
+            email: dbUser.email,
+            image: dbUser.image,
+          };
+        } catch (error) {
+          console.error("Authorization error:", error);
+          return null;
         }
       },
     }),
-  ] satisfies NextAuthConfig,
-});
+  ],
+};
+
+export default NextAuth(authOptions);
