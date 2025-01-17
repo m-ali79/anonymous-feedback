@@ -26,15 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#1F2937]`}
       >
-        <Nav />
         {children}
-        <footer className="bg-[#111827] w-full">
-          <p className="text-center text-white py-8 px-4">
-            © 2023 True Feedback. All rights reserved.
-          </p>
-        </footer>
       </body>
     </html>
   );
