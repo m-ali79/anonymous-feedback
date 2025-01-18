@@ -1,6 +1,6 @@
 "use client";
 
-import { registerSchema } from "@/lib/zod";
+import { checkUniqueUsernameSchema, registerSchema } from "@/lib/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,10 +13,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "../ui/button";
-import { CardWrapper } from "../card-wrapper";
+import { Button } from "@/components/ui/button";
+import { CardWrapper } from "@/components/card-wrapper";
+import checkUniqueUsername from "@/actions/checkUniqueUsername";
+import { useDebouncedCallback } from "use-debounce";
+import { useState } from "react";
 
 export default function RegisterForm() {
+  const [userName, setUserName] = useState<string | undefined>("");
+
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -31,6 +36,17 @@ export default function RegisterForm() {
 
     console.log(values);
   }
+
+  const handleChange = useDebouncedCallback(
+    (value: z.infer<typeof checkUniqueUsernameSchema>) =>
+      checkUniqueUsername(value),
+    1000
+  );
+
+  // debounce the function
+  // zod should yell if something is wrong with the field on writing
+  // show spinner when waiting for response
+  // show error | success message of the action
 
   return (
     <div className="flex items-center justify-center w-full h-[100vh]">
@@ -50,7 +66,16 @@ export default function RegisterForm() {
                 <FormItem>
                   <FormLabel className="font-semibold">UserName</FormLabel>
                   <FormControl>
-                    <Input placeholder="jhon Doe" {...field} required />
+                    <Input
+                      placeholder="jhon Doe"
+                      {...field}
+                      required
+                      value={userName}
+                      onChange={(e) => {
+                        handleChange(e.target.value);
+                        // setUserName(e.target.value);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -82,7 +107,12 @@ export default function RegisterForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="******" {...field} required />
+                    <Input
+                      placeholder="******"
+                      {...field}
+                      required
+                      type="password"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
