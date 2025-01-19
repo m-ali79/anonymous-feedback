@@ -1,35 +1,28 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { checkUniqueUsernameSchema } from "@/lib/zod";
-import { z } from "zod";
+import { registerSchema } from "@/lib/zod";
 
-// make the schema
-// Submit the changs to the server on every debounce
-// validate schema to ensure proper validation
-// make db qurey
-// give result
+export default async function checkUniqueUsername(value: string) {
+  const userNameSchema = registerSchema.pick({ userName: true });
 
-export default async function checkUniqueUsername(
-  value: z.infer<typeof checkUniqueUsernameSchema>
-) {
-  const validatedField = checkUniqueUsernameSchema.safeParse(value);
-  if (!validatedField.success) return { error: "invalid field" };
+  const validatedField = userNameSchema.safeParse({ userName: value });
+  if (!validatedField.success)
+    return { error: validatedField.error.errors[0]?.message };
 
-  const userName = validatedField.data;
-  console.log(userName);
+  const { userName } = validatedField.data;
 
   try {
     const existingUser = await db.user.findUnique({ where: { userName } });
 
-    if (!existingUser) return { success: "your username is unique" };
-    else return { error: "username is not unique." };
+    if (!existingUser) return { success: "Your username is unique." };
+    else return { error: "Username is not unique." };
   } catch (error) {
     console.error("Error checking the unique userName", error);
 
     return {
       error:
-        "something went wrong while checking the unique username. please try again",
+        "Something went wrong while checking the unique username. Please try again.",
     };
   }
 }

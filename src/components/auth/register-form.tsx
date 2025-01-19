@@ -1,6 +1,6 @@
 "use client";
 
-import { checkUniqueUsernameSchema, registerSchema } from "@/lib/zod";
+import { registerSchema } from "@/lib/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +20,8 @@ import { useDebouncedCallback } from "use-debounce";
 import { useState } from "react";
 
 export default function RegisterForm() {
-  const [userName, setUserName] = useState<string | undefined>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [usernameMessage, setUsernameMessage] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -31,22 +32,24 @@ export default function RegisterForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof registerSchema>) {
-    // call the server action
+  const handleUsernameChange = useDebouncedCallback(async (value: string) => {
+    setIsLoading(true);
+    setUsernameMessage(null);
 
+    const response = await checkUniqueUsername(value);
+
+    if (response.error) {
+      setUsernameMessage(response.error);
+    } else if (response.success) {
+      setUsernameMessage(response.success);
+    }
+
+    setIsLoading(false);
+  }, 1000);
+
+  function onSubmit(values: z.infer<typeof registerSchema>) {
     console.log(values);
   }
-
-  const handleChange = useDebouncedCallback(
-    (value: z.infer<typeof checkUniqueUsernameSchema>) =>
-      checkUniqueUsername(value),
-    1000
-  );
-
-  // debounce the function
-  // zod should yell if something is wrong with the field on writing
-  // show spinner when waiting for response
-  // show error | success message of the action
 
   return (
     <div className="flex items-center justify-center w-full h-[100vh]">
@@ -55,7 +58,7 @@ export default function RegisterForm() {
         cardDescription="Sign up to start your anonymous adventure"
         backLinkLabel="Sign in"
         backLinkHerf="signin"
-        backLinkDesc="Already a memeber?"
+        backLinkDesc="Already a member?"
       >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -70,13 +73,26 @@ export default function RegisterForm() {
                       placeholder="jhon Doe"
                       {...field}
                       required
-                      value={userName}
                       onChange={(e) => {
-                        handleChange(e.target.value);
-                        // setUserName(e.target.value);
+                        field.onChange(e);
+                        handleUsernameChange(e.target.value);
                       }}
                     />
                   </FormControl>
+                  {isLoading && (
+                    <p className="text-sm text-gray-500">Checking...</p>
+                  )}
+                  {usernameMessage && (
+                    <p
+                      className={`text-sm ${
+                        usernameMessage.includes("unique")
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {usernameMessage}
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
