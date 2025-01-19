@@ -15,13 +15,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardWrapper } from "@/components/card-wrapper";
-import checkUniqueUsername from "@/actions/checkUniqueUsername";
+import checkUniqueUsername from "@/actions/auth/checkUniqueUsername";
 import { useDebouncedCallback } from "use-debounce";
 import { useState } from "react";
+import { register } from "@/actions/auth/register";
+import { FormError } from "@/components/from-error";
+import { FormSuccess } from "@/components/form-success";
 
 export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [usernameMessage, setUsernameMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>("");
+  const [success, setSuccess] = useState<string | undefined>("");
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -48,7 +53,17 @@ export default function RegisterForm() {
   }, 1000);
 
   function onSubmit(values: z.infer<typeof registerSchema>) {
-    console.log(values);
+    setError("");
+    setSuccess("");
+
+    setIsLoading(true);
+
+    register(values).then((data) => {
+      setSuccess(data.success);
+      setError(data.error);
+    });
+
+    setIsLoading(false);
   }
 
   return (
@@ -134,8 +149,13 @@ export default function RegisterForm() {
                 </FormItem>
               )}
             />
-
-            <Button type="submit" className="font-bold w-full">
+            <FormError message={error} />
+            <FormSuccess message={success} />
+            <Button
+              type="submit"
+              className="font-bold w-full"
+              disabled={isLoading}
+            >
               Signup
             </Button>
           </form>
