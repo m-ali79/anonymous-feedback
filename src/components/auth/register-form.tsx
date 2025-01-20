@@ -64,6 +64,8 @@ export default function RegisterForm() {
     });
 
     setIsLoading(false);
+
+    form.reset();
   }
 
   return (
